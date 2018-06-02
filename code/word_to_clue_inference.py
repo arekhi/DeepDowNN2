@@ -28,7 +28,7 @@ glove_length = len(word_glove_pairs_dict['a'])
 # Make a new list: for the word-clue pairs whose words appear in the word-glove
 #   dict, translate that pair into a pair [emb_word, emb_clue_list], where
 #   emb_clue_list is the list [emb_clue_word_0, emb_clue_word_1, ...].
-word_clue_embeddings_list, words, indices, clues, num_pairs_added, max_clue_length = helper_functions.choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict)
+words, indices, clues, num_pairs_added, max_clue_length = helper_functions.choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict)
 
 # Add start, end, and pad tokens to word-glove pairs dict and append start and end tokens to each clue (and pad)
 word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, training_clue_indices, clues = helper_functions.add_tokens(word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, glove_length, clues, max_clue_length, np)
