@@ -10,8 +10,8 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 5
-NUM_EPOCH = 205
+NUM_TRAIN = 1000000
+NUM_EPOCH = 100
 WORD_IDX = 4
 a_LSTM = 128
 
@@ -30,6 +30,9 @@ glove_length = len(word_glove_pairs_dict['a'])
 #   dict, translate that pair into a pair [emb_word, emb_clue_list], where
 #   emb_clue_list is the list [emb_clue_word_0, emb_clue_word_1, ...].
 words, indices, clues, num_pairs_added, max_clue_length = helper_functions.choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict)
+
+print(num_pairs_added)
+assert(1==0)
 
 # Add start, end, and pad tokens to word-glove pairs dict and append start and end tokens to each clue (and pad)
 word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, training_clue_indices, clues = helper_functions.add_tokens(word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, glove_length, clues, max_clue_length, np)
@@ -69,8 +72,8 @@ clue_indices = keras.layers.Input(shape = (None,), dtype = 'int32', name = 'clue
 
 x_word = embedding_layer(word_index)
 encoder_output, a, c = encoder_LSTM(x_word, initial_state = [a0, c0])
-#masked_clue_indices = masking_layer(clue_indices)
-x_clue = embedding_layer(clue_indices)
+masked_clue_indices = masking_layer(clue_indices)
+x_clue = embedding_layer(masked_clue_indices)
 output, _, _ = decoder_LSTM(x_clue, initial_state = [a, c])
 #output = dropout_layer(output)
 output = dense_layer(output)
@@ -79,7 +82,7 @@ output = softmax_activation(output)
 model = keras.models.Model(inputs = [a0, c0, word_index, clue_indices], outputs = output)
 
 # Compile the training model
-model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['categorical_accuracy'])
+model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['categorical_accuracy']) 
 
 # Summarize the training model
 #print(model.summary())
@@ -92,14 +95,14 @@ hist = model.fit(x_train, y_train, epochs = NUM_EPOCH, verbose = 1)
 with open('model_stats.txt', 'wb') as fp: 
     pickle.dump(hist.history, fp)
 
-#model.save('trained_model_experiment.h5')
+model.save('trained_model_experiment.h5')
 
 # Define the inference set
 NUM_INFER = 1
 x_infer_a0 = np.zeros((NUM_INFER, a_LSTM))
 x_infer_c0 = np.zeros((NUM_INFER, a_LSTM))
-#x_infer_word_index = np.array([indices[WORD_IDX]])
-x_infer_word_index = np.array([56])
+x_infer_word_index = np.array([indices[WORD_IDX]])
+#x_infer_word_index = np.array([56])
 x_infer = [x_infer_a0, x_infer_c0, x_infer_word_index]
 
 # Define the inference setup
@@ -132,7 +135,7 @@ while not stop_condition:
     i += 1
 
 # Print the inferred (generated) clue(s)
-#print('\nWord: ' + index_to_word_dict[indices[WORD_IDX]])
-print('\nWord: ' + index_to_word_dict[WORD_IDX])
+print('\nWord: ' + index_to_word_dict[indices[WORD_IDX]])
+#print('\nWord: ' + index_to_word_dict[WORD_IDX])
 print('\nActual clue: ' + ' '.join(word for word in clues[WORD_IDX]))
 print('\nGenerated clue: ' + ' '.join(word for word in generated_clue) + '\n') 

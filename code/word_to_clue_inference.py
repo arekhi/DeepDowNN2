@@ -2,13 +2,15 @@ import pickle
 import numpy as np
 import helper_functions
 import warnings
+import sys
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', category=FutureWarning)
     import tensorflow as tf
     import keras
 
-NUM_TRAIN = 1
-WORD_IDX = 0
+NUM_TRAIN = 100000
+NUM_EPOCH = 100
+WORD_IDX = int(sys.argv[1])
 a_LSTM = 128
 
 np.random.seed(0)
@@ -40,16 +42,18 @@ for word in word_to_index_dict.keys():
 
 # Load the model
 trained_model = keras.models.load_model('trained_model_experiment.h5')
-encoder_layer_weights = trained_model.layers[5].get_weights()
-decoder_layer_weights = trained_model.layers[6].get_weights()
+print(trained_model.summary())
+
+encoder_layer_weights = trained_model.layers[6].get_weights()
+decoder_layer_weights = trained_model.layers[7].get_weights()
 dense_layer_weights = trained_model.layers[8].get_weights()
 
 # Define the training model
 embedding_layer = keras.layers.Embedding(len(word_glove_pairs_dict), glove_length, weights = [embedding_matrix], trainable = False, name = 'embedding')
-encoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = False, name = 'encoder_LSTM')
-decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM') 
+encoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = False, weights = encoder_layer_weights, name = 'encoder_LSTM')
+decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, weights = decoder_layer_weights, name = 'decoder_LSTM') 
 dropout_layer = keras.layers.Dropout(0.5)
-dense_layer = keras.layers.TimeDistributed(keras.layers.Dense(len(word_glove_pairs_dict)))
+dense_layer = keras.layers.TimeDistributed(keras.layers.Dense(len(word_glove_pairs_dict)), weights = dense_layer_weights)
 softmax_activation = keras.layers.Activation('softmax')
 
 a0 = keras.layers.Input(shape = (a_LSTM,), name = 'a0')
@@ -84,7 +88,9 @@ x_clue = keras.layers.Embedding(len(word_glove_pairs_dict), glove_length, weight
 decoder_state_input_a = keras.layers.Input(shape = (a_LSTM,))
 decoder_state_input_c = keras.layers.Input(shape = (a_LSTM,))
 decoder_outputs, a, c = decoder_LSTM(x_clue, initial_state = [decoder_state_input_a, decoder_state_input_c])
+decoder_outpus = dropout_layer(decoder_outputs)
 decoder_outputs = dense_layer(decoder_outputs)
+decoder_outputs = softmax_activation(decoder_outputs)
 decoder_model = keras.models.Model(inputs = [clue_word_index] + [decoder_state_input_a, decoder_state_input_c], outputs = [decoder_outputs] + [a, c])
 print(decoder_model.summary())
 #keras.utils.plot_model(decoder_model, to_file='decoder_model.png', show_shapes = True)
@@ -92,16 +98,26 @@ print(decoder_model.summary())
 states_inferred = encoder_model.predict(x_infer)
 generated_clue = ['<START>']
 
-stop_condition = False
-max_length = 20
-while not stop_condition:
-    output_OH, a_infer, c_infer = decoder_model.predict([np.array([word_to_index_dict[generated_clue[-1]]])] + states_inferred)
-    generated_word = index_to_word_dict[np.argmax(output_OH)]
-    generated_clue.append(generated_word)
-    if generated_word == '<END>' or len(generated_clue) == max_length:
-        stop_condition = True
-    states_inferred = [a_infer, c_infer]
-
 print('\nWord: ' + index_to_word_dict[indices[WORD_IDX]])
 print('\nActual clue: ' + ' '.join(word for word in clues[WORD_IDX]))
-print('\nGenerated clue: ' + ' '.join(word for word in generated_clue) + '\n') 
+
+stop_condition = False
+max_length = 20
+i = 0
+while i < 10:
+    while not stop_condition:
+        output_probs, a_infer, c_infer = decoder_model.predict([np.array([word_to_index_dict[generated_clue[-1]]])] + states_inferred)
+        print(np.sort(output_probs.ravel())[-5:])
+    #    print(np.sum(output_probs.ravel()))
+        next_idx = np.random.choice(len(word_to_index_dict), p = output_probs.ravel())
+    #    next_idx = np.argmax(output_probs) # Choose the most probable next word
+        generated_word = index_to_word_dict[next_idx] # Sample the next word according to the outputted probabilities
+        generated_clue.append(generated_word)
+        if generated_word == '<END>' or len(generated_clue) == max_length:
+            stop_condition = True
+        states_inferred = [a_infer, c_infer]
+    print('\nGenerated clue: ' + ' '.join(word for word in generated_clue) + '\n')
+    stop_condition = False
+    generated_clue = ['<START>']
+    states_inferred = encoder_model.predict(x_infer)
+    i += 1

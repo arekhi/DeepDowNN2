@@ -9,13 +9,20 @@ def choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dic
     words = []
     indices = []
     clues = []
+    words_present = 0
     for pair in word_clue_pairs_list:
         if done_flag:
             break
         # end if
         word = pair[1].lower()
         if word in word_glove_pairs_dict:
-            clue = pair[0].lower().split()
+            words_present += 1
+            clue = pair[0].lower()
+            for ch in [',', ':', '.', ';', '"', '\'', '!', '?', '$', '%', '(', ')']:
+                clue = clue.replace(ch, '')
+            clue = clue.replace('-', ' ')
+#            print(clue)
+            clue = clue.split()
             clue_embeddings_list = []
             missing_word_flag = 0
             for clue_word in clue:
@@ -42,7 +49,7 @@ def choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dic
             # end if
         # end if
     # end for
-    
+#    print(words_present) 
     max_clue_length = 0
     for clue in clues:
         if len(clue) > max_clue_length:
