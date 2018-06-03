@@ -43,8 +43,8 @@ def choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dic
                 if num_pairs_added >= NUM_TRAIN:
                     done_flag = 1
                 # end if
-                if (num_pairs_added % 100000) == 0:
-                    print(num_pairs_added)
+#                if (num_pairs_added % 100000) == 0:
+#                    print(num_pairs_added)
                 # end if
             # end if
         # end if

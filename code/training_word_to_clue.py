@@ -10,10 +10,10 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**16
+NUM_TRAIN = 2**17
 FRAC_VAL = 0.01
 NUM_EPOCH = 50
-a_LSTM = 256
+a_LSTM = 128
 
 # Read in word-clue pairs
 with open('../data/word_clue_pairs.txt', 'rb') as fp:
@@ -43,7 +43,9 @@ x_train_word_index = np.array(indices)
 x_train_clue_indices = np.array(training_clue_indices)
 x_train = [x_train_a0, x_train_c0, x_train_word_index, x_train_clue_indices]
 
-y_train = np.zeros((NUM_TRAIN, max_clue_length + 2, len(word_glove_pairs_dict)))
+#print(max_clue_length, len(word_glove_pairs_dict))
+
+y_train = np.zeros((NUM_TRAIN, max_clue_length + 2, len(word_glove_pairs_dict)), dtype = 'float16')
 for m in range(NUM_TRAIN):
     clue = clues[m]
     shifted_clue = clue[1:] + ['<PAD>']
