@@ -8,9 +8,9 @@ word_glove_pairs_dict = {}
 word_to_index_dict = {}
 index_to_word_dict = {}
 NUM_DIM = 50
-NUM_WORDS = 10000
+NUM_WORDS = 20000
 
-glove_file = open('../data/glove/glove.6B.' + str(NUM_DIM) + 'd.txt', 'r')
+glove_file = open('../data/glove.6B.' + str(NUM_DIM) + 'd.txt', 'r')
 
 common_file = open('../data/most_common_words_20k.txt', 'r')
 
