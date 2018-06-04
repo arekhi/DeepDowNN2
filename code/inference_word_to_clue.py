@@ -10,7 +10,7 @@ with warnings.catch_warnings():
 
 NUM_TRAIN = 100000
 WORD_IDX = int(sys.argv[1])
-a_LSTM = 256
+a_LSTM = 128
 
 np.random.seed(0)
 tf.set_random_seed(0)
@@ -40,7 +40,7 @@ for word in word_to_index_dict.keys():
     embedding_matrix[word_to_index_dict[word]] = np.array(word_glove_pairs_dict[word])
 
 # Load the model
-trained_model = keras.models.load_model('trained_model_experiment.h5')
+trained_model = keras.models.load_model('trained_model_word_only.h5')
 #print(trained_model.summary())
 
 encoder_layer_weights = trained_model.layers[6].get_weights()

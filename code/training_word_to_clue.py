@@ -10,9 +10,9 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**17
-FRAC_VAL = 0.01
-NUM_EPOCH = 50
+NUM_TRAIN = 2**7
+FRAC_VAL = 0.05
+NUM_EPOCH = 500
 a_LSTM = 128
 
 # Read in word-clue pairs
@@ -32,7 +32,7 @@ glove_length = len(word_glove_pairs_dict['a'])
 words, indices, clues, num_pairs_added, max_clue_length = helper_functions.choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict)
 
 print(num_pairs_added)
-assert(1==0)
+
 # Add start, end, and pad tokens to word-glove pairs dict and append start and end tokens to each clue (and pad)
 word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, training_clue_indices, clues = helper_functions.add_tokens(word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, glove_length, clues, max_clue_length, np)
 
@@ -96,4 +96,4 @@ hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPO
 with open('model_stats.txt', 'wb') as fp: 
     pickle.dump(hist.history, fp)
 
-model.save('trained_model_experiment.h5')
+model.save('trained_model_word_only.h5')

@@ -102,7 +102,7 @@ print(model.summary())
 #keras.utils.plot_model(model, to_file='model.png', show_shapes = True)
 
 # Fit the training model (train)
-hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPOCH, verbose = 0)
+hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPOCH, verbose = 1)
 with open('model_stats.txt', 'wb') as fp: 
     pickle.dump(hist.history, fp)
 
