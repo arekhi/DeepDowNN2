@@ -10,7 +10,7 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**15
+NUM_TRAIN = 2**10
 MAX_DEFN_LEN = 20
 FRAC_VAL = 0.01
 NUM_EPOCH = 3
@@ -76,6 +76,7 @@ dense_between_a = keras.layers.Dense(a_LSTM, activation = 'tanh')
 dense_between_c = keras.layers.Dense(a_LSTM, activation = 'tanh')
 #choose_timestep = keras.layers.Lambda(lambda x, t: x[:, t, :]) 
 decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM')
+squeezer = keras.layers.Lambda(lambda x: x[:, 0, :])
 repeater = keras.layers.RepeatVector(MAX_DEFN_LEN)
 attn_dense_1 = keras.layers.Dense(64, activation = "tanh")
 attn_dense_2 = keras.layers.Dense(1, activation = "relu")
@@ -101,12 +102,14 @@ c_concat = keras.layers.Concatenate()([c, c_bwd])
 a_passed = dense_between_a(a_concat)
 c_passed = dense_between_c(c_concat)
 
+print(max_clue_length)
+
 for t in range(max_clue_length + 2):
     clue_index = keras.layers.Lambda(lambda x: keras.backend.expand_dims(x[:, t], axis = -1))(clue_indices) 
     masked_clue_index = masking_layer(clue_index)
     x_clue = embedding_layer(masked_clue_index)
     output, a_passed, c_passed = decoder_LSTM(x_clue, initial_state = [a_passed, c_passed])
-    output = keras.layers.Lambda(lambda x: x[:, 0, :])(output)
+    output = squeezer(output)
     output = repeater(output)
     output = keras.layers.Concatenate(axis = -1)([output, encoder_output_densed])
     output = attn_dense_1(output)
