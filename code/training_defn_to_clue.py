@@ -10,7 +10,7 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**7
+NUM_TRAIN = 2**20
 MAX_DEFN_LEN = 20
 FRAC_VAL = 0.05
 NUM_EPOCH = 500
@@ -21,7 +21,7 @@ with open('../data/word_clue_pairs.txt', 'rb') as fp:
     word_clue_pairs_list = pickle.load(fp)
 
 # Read in word-glove pairs
-with open('../data/word_glove_pairs.txt', 'rb') as fp:
+with open('../data/word_glove_pairs_word_all.txt', 'rb') as fp:
     word_glove_pairs_dict = pickle.load(fp)
     word_to_index_dict = pickle.load(fp)
     index_to_word_dict = pickle.load(fp)
@@ -38,6 +38,7 @@ with open('../data/word_defn_pairs.txt', 'rb') as fp:
 words, indices, clues, definitions, num_pairs_added, max_clue_length, max_defn_length = helper_functions.choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict, word_defn_pairs_dict)
 
 print(num_pairs_added)
+assert(1==0)
 #for i in range(20):
 #    print(words[i], definitions[i])
 

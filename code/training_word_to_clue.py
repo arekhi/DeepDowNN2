@@ -10,9 +10,9 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**7
+NUM_TRAIN = 2**16
 FRAC_VAL = 0.05
-NUM_EPOCH = 500
+NUM_EPOCH = 100
 a_LSTM = 128
 
 # Read in word-clue pairs
@@ -20,7 +20,7 @@ with open('../data/word_clue_pairs.txt', 'rb') as fp:
     word_clue_pairs_list = pickle.load(fp)
 
 # Read in word-glove pairs
-with open('../data/word_glove_pairs.txt', 'rb') as fp:
+with open('../data/word_glove_pairs_word_all.txt', 'rb') as fp:
     word_glove_pairs_dict = pickle.load(fp)
     word_to_index_dict = pickle.load(fp)
     index_to_word_dict = pickle.load(fp)
@@ -31,7 +31,7 @@ glove_length = len(word_glove_pairs_dict['a'])
 #   emb_clue_list is the list [emb_clue_word_0, emb_clue_word_1, ...].
 words, indices, clues, num_pairs_added, max_clue_length = helper_functions.choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict)
 
-print(num_pairs_added)
+print(str(num_pairs_added) + ' word/clue pairs added to the dataset')
 
 # Add start, end, and pad tokens to word-glove pairs dict and append start and end tokens to each clue (and pad)
 word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, training_clue_indices, clues = helper_functions.add_tokens(word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, glove_length, clues, max_clue_length, np)
@@ -43,7 +43,7 @@ x_train_word_index = np.array(indices)
 x_train_clue_indices = np.array(training_clue_indices)
 x_train = [x_train_a0, x_train_c0, x_train_word_index, x_train_clue_indices]
 
-#print(max_clue_length, len(word_glove_pairs_dict))
+print(max_clue_length, len(word_glove_pairs_dict))
 
 y_train = np.zeros((NUM_TRAIN, max_clue_length + 2, len(word_glove_pairs_dict)), dtype = 'float16')
 for m in range(NUM_TRAIN):

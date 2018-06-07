@@ -13,7 +13,6 @@ def choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dic
     for pair in word_clue_pairs_list:
         if done_flag:
             break
-        # end if
         word = pair[1].lower()
         if word in word_glove_pairs_dict:
             words_present += 1
@@ -21,34 +20,22 @@ def choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dic
             for ch in [',', ':', '.', ';', '"', '\'', '!', '?', '$', '%', '(', ')']:
                 clue = clue.replace(ch, '')
             clue = clue.replace('-', ' ')
-#            print(clue)
             clue = clue.split()
-            clue_embeddings_list = []
             missing_word_flag = 0
             for clue_word in clue:
-                if clue_word in word_glove_pairs_dict:
-                    clue_embeddings_list.append(word_glove_pairs_dict[clue_word])
-                else: # if a word in the clue is not in the glove database, flag it and break
+                if clue_word not in word_glove_pairs_dict:
                     missing_word_flag = 1
                     break
-                # end if
-            # end for
-            if not missing_word_flag:
+            if (not missing_word_flag) and (len(clue) != 0):
                 words.append(word)
                 indices.append(word_to_index_dict[word])
                 word_embedding = word_glove_pairs_dict[word]
                 clues.append(clue)
-#                word_clue_embeddings_list.append([word_embedding, clue_embeddings_list])
                 num_pairs_added += 1
                 if num_pairs_added >= NUM_TRAIN:
                     done_flag = 1
-                # end if
 #                if (num_pairs_added % 100000) == 0:
 #                    print(num_pairs_added)
-                # end if
-            # end if
-        # end if
-    # end for
 #    print(words_present) 
     max_clue_length = 0
     for clue in clues:

@@ -12,9 +12,8 @@ word_clue_pairs_list = list()
 for row in reader:
     word_clue_pairs_list.append(row)
 
-# Print clues
-#for row in word_clue_pairs_list: 
-#    print(row[1])
+# Sort list by word
+word_clue_pairs_list.sort(key = lambda x: x[0])
 
 with open('../data/word_clue_pairs.txt', 'wb') as fp:
     pickle.dump(word_clue_pairs_list, fp) 
