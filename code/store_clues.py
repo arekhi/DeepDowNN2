@@ -13,7 +13,7 @@ for row in reader:
     word_clue_pairs_list.append(row)
 
 # Sort list by word
-word_clue_pairs_list.sort(key = lambda x: x[0])
+word_clue_pairs_list.sort(key = lambda x: x[1])
 
 with open('../data/word_clue_pairs.txt', 'wb') as fp:
     pickle.dump(word_clue_pairs_list, fp) 

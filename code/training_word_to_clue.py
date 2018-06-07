@@ -10,7 +10,7 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**16
+NUM_TRAIN = 2**14
 FRAC_VAL = 0.05
 NUM_EPOCH = 100
 a_LSTM = 128
