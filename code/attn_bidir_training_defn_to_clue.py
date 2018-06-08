@@ -13,7 +13,7 @@ tf.set_random_seed(0)
 NUM_TRAIN = 2**10
 MAX_DEFN_LEN = 20
 FRAC_VAL = 0.01
-NUM_EPOCH = 3
+NUM_EPOCH = 100
 a_LSTM = 128
 
 # Read in word-clue pairs
@@ -60,6 +60,8 @@ for m in range(num_pairs_added):
     shifted_clue = clue[1:] + ['<PAD>']
     for i in range(max_clue_length + 2):
         y_train[m, i, word_to_index_dict[shifted_clue[i]]] = 1
+#y_train = np.transpose(y_train, (1, 0, 2))
+#y_train = list(y_train)
 
 # Make the embedding matrix
 embedding_matrix = np.zeros((len(word_glove_pairs_dict), glove_length))
@@ -77,6 +79,7 @@ dense_between_c = keras.layers.Dense(a_LSTM, activation = 'tanh')
 #choose_timestep = keras.layers.Lambda(lambda x, t: x[:, t, :]) 
 decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM')
 squeezer = keras.layers.Lambda(lambda x: x[:, 0, :])
+squeezer2 = keras.layers.Lambda(lambda x: x[:, 0, :])
 repeater = keras.layers.RepeatVector(MAX_DEFN_LEN)
 attn_dense_1 = keras.layers.Dense(64, activation = "tanh")
 attn_dense_2 = keras.layers.Dense(1, activation = "relu")
@@ -118,9 +121,14 @@ for t in range(max_clue_length + 2):
     output = attn_dot([output, encoder_output_densed])
     output = dropout_layer(output)
     output = dense_layer(output)
+#    output = squeezer2(output)
     output = softmax_activation(output)
+    if t == 0:
+        outputs = output
+    else:
+        outputs = keras.layers.Concatenate(axis = 1)([outputs, output])
 
-model = keras.models.Model(inputs = [a0, c0, defn_indices, clue_indices], outputs = output)
+model = keras.models.Model(inputs = [a0, c0, defn_indices, clue_indices], outputs = outputs)
 
 # Compile the training model
 model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['categorical_accuracy']) 
@@ -129,8 +137,7 @@ model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = [
 print(model.summary())
 
 # Visualize training model
-keras.utils.plot_model(model, to_file='model.png', show_shapes = True)
-assert(1==0)
+#keras.utils.plot_model(model, to_file='model.png', show_shapes = True)
 
 # Fit the training model (train)
 hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPOCH, verbose = 1)
