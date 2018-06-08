@@ -7,14 +7,24 @@ def choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dic
     num_pairs_added = 0
     done_flag = 0
     words = []
+    frequency = {}
     indices = []
     clues = []
     words_present = 0
     for pair in word_clue_pairs_list:
+        do_not_store = 0
         if done_flag:
             break
         word = pair[1].lower()
-        if word in word_glove_pairs_dict:
+        if word not in frequency:
+            frequency[word] = 1
+        else:
+            if frequency[word] < 5:
+                frequency[word] = frequency[word] + 1
+            else:
+                do_not_store = 1
+        word = pair[1].lower()
+        if (word in word_glove_pairs_dict) and (not do_not_store):
             words_present += 1
             clue = pair[0].lower()
             for ch in [',', ':', '.', ';', '"', '\'', '!', '?', '$', '%', '(', ')']:

@@ -10,7 +10,7 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**14
+NUM_TRAIN = 2**22
 FRAC_VAL = 0.05
 NUM_EPOCH = 100
 a_LSTM = 128
@@ -32,7 +32,7 @@ glove_length = len(word_glove_pairs_dict['a'])
 words, indices, clues, num_pairs_added, max_clue_length = helper_functions.choose_word_clue_pairs(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict)
 
 print(str(num_pairs_added) + ' word/clue pairs added to the dataset')
-
+assert(1==0)
 # Add start, end, and pad tokens to word-glove pairs dict and append start and end tokens to each clue (and pad)
 word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, training_clue_indices, clues = helper_functions.add_tokens(word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, glove_length, clues, max_clue_length, np)
 
