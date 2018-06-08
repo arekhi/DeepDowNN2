@@ -76,10 +76,8 @@ encoder_LSTM_bwd = keras.layers.LSTM(a_LSTM, return_state = True, return_sequenc
 dense_encoder_output = keras.layers.Dense(a_LSTM, activation = 'tanh')
 dense_between_a = keras.layers.Dense(a_LSTM, activation = 'tanh')
 dense_between_c = keras.layers.Dense(a_LSTM, activation = 'tanh')
-#choose_timestep = keras.layers.Lambda(lambda x, t: x[:, t, :]) 
 decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM')
 squeezer = keras.layers.Lambda(lambda x: x[:, 0, :])
-squeezer2 = keras.layers.Lambda(lambda x: x[:, 0, :])
 repeater = keras.layers.RepeatVector(MAX_DEFN_LEN)
 attn_dense_1 = keras.layers.Dense(64, activation = "tanh")
 attn_dense_2 = keras.layers.Dense(1, activation = "relu")
@@ -121,7 +119,6 @@ for t in range(max_clue_length + 2):
     output = attn_dot([output, encoder_output_densed])
     output = dropout_layer(output)
     output = dense_layer(output)
-#    output = squeezer2(output)
     output = softmax_activation(output)
     if t == 0:
         outputs = output
