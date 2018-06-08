@@ -53,6 +53,7 @@ def choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove
     num_pairs_added = 0
     done_flag = 0
     words = []
+    frequency = {}
     indices = []
     clues = []
     definitions = []
@@ -60,20 +61,27 @@ def choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove
     max_clue_length = 0
     max_defn_length = 0
     for pair in word_clue_pairs_list:
+        do_not_store = 0
         if done_flag:
             break
         word = pair[1].lower()
-        if (word in word_glove_pairs_dict) and (word in word_defn_pairs_dict):
+        if word not in frequency:
+            frequency[word] = 1
+        else:
+            if frequency[word] < 5:
+                frequency[word] = frequency[word] + 1
+            else:
+                do_not_store = 1
+        if (word in word_glove_pairs_dict) and (word in word_defn_pairs_dict) and (not do_not_store):
             words_present += 1
             clue = pair[0].lower()
-            defn = word_defn_pairs_dict[word].lower()
+            defn = word + ' ' + word_defn_pairs_dict[word].lower()
             for ch in [',', ':', '.', ';', '"', '\'', '!', '?', '$', '%', '(', ')']:
                 clue = clue.replace(ch, '')
                 defn = defn.replace(ch, '')
             clue = clue.replace('-', ' ')
             defn = defn.replace('-', ' ')
             defn = re.sub('<(.*?)>', '', defn)
-#            print(clue)
             clue = clue.split()
             defn = defn.split()
             missing_word_flag = 0
@@ -81,12 +89,12 @@ def choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove
                 if clue_word not in word_glove_pairs_dict:
                     missing_word_flag = 1
                     break
-            if (not missing_word_flag) and (len(clue) != 0):
+            if not missing_word_flag:
                 for defn_word in defn:
                     if defn_word not in word_glove_pairs_dict:
                         missing_word_flag = 1
                         break
-            if not missing_word_flag:
+            if (not missing_word_flag) and (len(clue) != 0) and (len(defn) != 0):
                 words.append(word)
                 indices.append(word_to_index_dict[word])
                 word_embedding = word_glove_pairs_dict[word]

@@ -8,7 +8,7 @@ with warnings.catch_warnings():
     import tensorflow as tf
     import keras
 
-NUM_TRAIN = 2**12
+NUM_TRAIN = 50000 #2**14
 MAX_DEFN_LEN = 20
 WORD_IDX = int(sys.argv[1])
 a_LSTM = 128
@@ -21,7 +21,7 @@ with open('../data/word_clue_pairs.txt', 'rb') as fp:
     word_clue_pairs_list = pickle.load(fp)
 
 # Read in word-glove pairs
-with open('../data/word_glove_pairs.txt', 'rb') as fp:
+with open('../data/word_glove_pairs_word_all.txt', 'rb') as fp:
     word_glove_pairs_dict = pickle.load(fp)
     word_to_index_dict = pickle.load(fp)
     index_to_word_dict = pickle.load(fp)
@@ -37,7 +37,7 @@ with open('../data/word_defn_pairs.txt', 'rb') as fp:
 #   emb_clue_word_1, ...].
 words, indices, clues, definitions, num_pairs_added, max_clue_length, max_defn_length = helper_functions.choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict, word_defn_pairs_dict)
 
-print(num_pairs_added)
+print('\nNum pairs added: ' + str(num_pairs_added) + '\n')
 
 # Add start, end, and pad tokens to word-glove pairs dict, clip definitions, and append start, end, and pad tokens to each clue and definition
 word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, training_clue_indices, definition_indices, clues, definitions = helper_functions.add_tokens_with_dict(word_glove_pairs_dict, word_to_index_dict, index_to_word_dict, glove_length, clues, max_clue_length, np, definitions, MAX_DEFN_LEN)
@@ -58,25 +58,28 @@ dense_c_weights = trained_model.layers[13].get_weights()
 decoder_layer_weights = trained_model.layers[15].get_weights()
 dense_encoder_weights = trained_model.layers[22].get_weights()
 attn_dense_1_weights = trained_model.layers[27].get_weights()
-attn_dense_2_weights = trained_model.layers[30].get_weights()
-final_dense_weights = trained_model.layers[42].get_weights()
+attn_dense_2_weights = trained_model.layers[33].get_weights()
+attn_dense_3_weights = trained_model.layers[46].get_weights()
+final_dense_weights = trained_model.layers[54].get_weights()
 
 # Define the training model
 masking_layer = keras.layers.Masking(mask_value = word_to_index_dict['<PAD>'], input_shape = (None,))
 embedding_layer = keras.layers.Embedding(len(word_glove_pairs_dict), glove_length, weights = [embedding_matrix], trainable = False, name = 'embedding')
-encoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'encoder_LSTM', weights = encoder_layer_weights)
-encoder_LSTM_bwd = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'encoder_LSTM_bwd', go_backwards = True, weights = encoder_bwd_layer_weights)
+encoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'encoder_LSTM', weights = encoder_layer_weights, recurrent_dropout = 0.4)
+encoder_LSTM_bwd = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'encoder_LSTM_bwd', go_backwards = True, weights = encoder_bwd_layer_weights, recurrent_dropout = 0.2)
 dense_encoder_output = keras.layers.Dense(a_LSTM, activation = 'tanh', weights = dense_encoder_weights) 
 dense_between_a = keras.layers.Dense(a_LSTM, activation = 'tanh', weights = dense_a_weights)
 dense_between_c = keras.layers.Dense(a_LSTM, activation = 'tanh', weights = dense_c_weights)
-decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM', weights = decoder_layer_weights)
+decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM', weights = decoder_layer_weights, recurrent_dropout = 0.2)
 squeezer = keras.layers.Lambda(lambda x: x[:, 0, :])
 repeater = keras.layers.RepeatVector(MAX_DEFN_LEN)
 attn_dense_1 = keras.layers.Dense(64, activation = "tanh", weights = attn_dense_1_weights) 
+attn_dropout = keras.layers.Dropout(0.2)
 attn_dense_2 = keras.layers.Dense(1, activation = "relu", weights = attn_dense_2_weights)
 attn_softmax = keras.layers.Softmax(axis = 1)
 attn_dot = keras.layers.Dot(axes = 1)
-dropout_layer = keras.layers.Dropout(0.5)
+attn_dense_3 = keras.layers.Dense(64, weights = attn_dense_3_weights) 
+dropout_layer = keras.layers.Dropout(0.4)
 dense_layer = keras.layers.Dense(len(word_glove_pairs_dict), weights = final_dense_weights)
 softmax_activation = keras.layers.Activation('softmax')
 
@@ -85,8 +88,8 @@ c0 = keras.layers.Input(shape = (a_LSTM,), name = 'c0')
 defn_indices = keras.layers.Input(shape = (MAX_DEFN_LEN,), dtype = 'int32', name = 'defn_indices')
 clue_indices = keras.layers.Input(shape = (None,), dtype = 'int32', name = 'clue_indices')
 
-#masked_defn_indices = masking_layer(defn_indices)
-x_defn = embedding_layer(defn_indices)
+masked_defn_indices = masking_layer(defn_indices)
+x_defn = embedding_layer(masked_defn_indices)
 encoder_output, a, c = encoder_LSTM(x_defn, initial_state = [a0, c0])
 encoder_bwd_output, a_bwd, c_bwd = encoder_LSTM_bwd(x_defn, initial_state = [a0, c0])
 encoder_output_concat = keras.layers.Concatenate()([encoder_output, encoder_bwd_output])
@@ -102,14 +105,17 @@ for t in range(max_clue_length + 2):
     clue_index = keras.layers.Lambda(lambda x: keras.backend.expand_dims(x[:, t], axis = -1))(clue_indices) 
     masked_clue_index = masking_layer(clue_index)
     x_clue = embedding_layer(masked_clue_index)
-    output, a_passed, c_passed = decoder_LSTM(x_clue, initial_state = [a_passed, c_passed])
-    output = squeezer(output)
+    output_dec, a_passed, c_passed = decoder_LSTM(x_clue, initial_state = [a_passed, c_passed])
+    output = squeezer(output_dec)
     output = repeater(output)
     output = keras.layers.Concatenate(axis = -1)([output, encoder_output_densed])
     output = attn_dense_1(output)
+    output = attn_dropout(output)
     output = attn_dense_2(output)
     output = attn_softmax(output)
     output = attn_dot([output, encoder_output_densed])
+    output = keras.layers.Concatenate()([output, output_dec])
+    output = attn_dense_3(output)
     output = dropout_layer(output)
     output = dense_layer(output)
     output = softmax_activation(output)
@@ -132,7 +138,7 @@ encoder_model = keras.models.Model(inputs = [a0, c0, defn_indices], outputs = [a
 #print(encoder_model.summary())
 #keras.utils.plot_model(encoder_model, to_file='encoder_model.png', show_shapes = True)
 
-clue_word_index = keras.layers.Input(shape = (None,), dtype = 'int32', name = 'clue_word_index')
+clue_word_index = keras.layers.Input(shape = (1,), dtype = 'int32', name = 'clue_word_index')
 
 decoder_state_input_a = keras.layers.Input(shape = (a_LSTM,))
 decoder_state_input_c = keras.layers.Input(shape = (a_LSTM,))
@@ -141,17 +147,19 @@ decoder_attn_input = keras.layers.Input(shape = (MAX_DEFN_LEN, a_LSTM))
 dec_a_passed = decoder_state_input_a
 dec_c_passed = decoder_state_input_c
 
-#dec_clue_index = keras.layers.Lambda(lambda x: keras.backend.expand_dims(x[:, t], axis = -1))(clue_indices) 
 dec_masked_clue_index = masking_layer(clue_word_index)
 dec_x_clue = embedding_layer(dec_masked_clue_index)
-dec_output, dec_a_passed, dec_c_passed = decoder_LSTM(dec_x_clue, initial_state = [dec_a_passed, dec_c_passed])
-dec_output = squeezer(dec_output)
+dec_output_LSTM, dec_a_passed, dec_c_passed = decoder_LSTM(dec_x_clue, initial_state = [dec_a_passed, dec_c_passed])
+dec_output = squeezer(dec_output_LSTM)
 dec_output = repeater(dec_output)
 dec_output = keras.layers.Concatenate(axis = -1)([dec_output, decoder_attn_input])
 dec_output = attn_dense_1(dec_output)
+dec_output = attn_dropout(dec_output)
 dec_output = attn_dense_2(dec_output)
 dec_output = attn_softmax(dec_output)
 dec_output = attn_dot([dec_output, decoder_attn_input])
+dec_output = keras.layers.Concatenate()([dec_output, dec_output_LSTM])
+dec_output = attn_dense_3(dec_output)
 dec_output = dropout_layer(dec_output)
 dec_output = dense_layer(dec_output)
 dec_output = softmax_activation(dec_output)
