@@ -81,7 +81,7 @@ def choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove
                 if clue_word not in word_glove_pairs_dict:
                     missing_word_flag = 1
                     break
-            if not missing_word_flag:
+            if (not missing_word_flag) and (len(clue) != 0):
                 for defn_word in defn:
                     if defn_word not in word_glove_pairs_dict:
                         missing_word_flag = 1

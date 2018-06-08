@@ -8,7 +8,7 @@ with warnings.catch_warnings():
     import tensorflow as tf
     import keras
 
-NUM_TRAIN = 2**10
+NUM_TRAIN = 2**12
 MAX_DEFN_LEN = 20
 WORD_IDX = int(sys.argv[1])
 a_LSTM = 128
@@ -48,7 +48,7 @@ for word in word_to_index_dict.keys():
     embedding_matrix[word_to_index_dict[word]] = np.array(word_glove_pairs_dict[word])
 
 # Load the model
-trained_model = keras.models.load_model('trained_model_with_defn.h5')
+trained_model = keras.models.load_model('trained_model_with_defn.h5', custom_objects = {'keras': keras, 't': 0})
 #print(trained_model.summary())
 
 encoder_layer_weights = trained_model.layers[7].get_weights()
@@ -82,7 +82,7 @@ softmax_activation = keras.layers.Activation('softmax')
 
 a0 = keras.layers.Input(shape = (a_LSTM,), name = 'a0')
 c0 = keras.layers.Input(shape = (a_LSTM,), name = 'c0')
-defn_indices = keras.layers.Input(shape = (None,), dtype = 'int32', name = 'defn_indices')
+defn_indices = keras.layers.Input(shape = (MAX_DEFN_LEN,), dtype = 'int32', name = 'defn_indices')
 clue_indices = keras.layers.Input(shape = (None,), dtype = 'int32', name = 'clue_indices')
 
 #masked_defn_indices = masking_layer(defn_indices)
@@ -93,8 +93,10 @@ encoder_output_concat = keras.layers.Concatenate()([encoder_output, encoder_bwd_
 encoder_output_densed = dense_encoder_output(encoder_output_concat)
 a_concat = keras.layers.Concatenate()([a, a_bwd])
 c_concat = keras.layers.Concatenate()([c, c_bwd])
-a_passed = dense_between_a(a_concat)
-c_passed = dense_between_c(c_concat)
+a_passed_enc = dense_between_a(a_concat)
+c_passed_enc = dense_between_c(c_concat)
+a_passed = a_passed_enc
+c_passed = c_passed_enc
 
 for t in range(max_clue_length + 2):
     clue_index = keras.layers.Lambda(lambda x: keras.backend.expand_dims(x[:, t], axis = -1))(clue_indices) 
@@ -126,7 +128,8 @@ x_infer_defn_indices = np.array([definition_indices[WORD_IDX]])
 x_infer = [x_infer_a0, x_infer_c0, x_infer_defn_indices]
 
 # Define the inference setup
-encoder_model = keras.models.Model(inputs = [a0, c0, defn_indices], outputs = [a_passed, c_passed] + [encoder_output_densed])
+encoder_model = keras.models.Model(inputs = [a0, c0, defn_indices], outputs = [a_passed_enc, c_passed_enc] + [encoder_output_densed])
+#print(encoder_model.summary())
 #keras.utils.plot_model(encoder_model, to_file='encoder_model.png', show_shapes = True)
 
 clue_word_index = keras.layers.Input(shape = (None,), dtype = 'int32', name = 'clue_word_index')
@@ -168,7 +171,7 @@ stop_condition = False
 max_length = 20
 for i in range(10):
     while not stop_condition:
-        output_probs, a_infer, c_infer = decoder_model.predict([np.array([word_to_index_dict[generated_clue[-1]]])] + encoder_a_output + encoder_c_output + encoder_attn_output)
+        output_probs, a_infer, c_infer = decoder_model.predict([np.array([word_to_index_dict[generated_clue[-1]]])] + [encoder_a_output, encoder_c_output, encoder_attn_output])
         print(np.sort(output_probs.ravel())[-5:])
     #    print(np.sum(output_probs.ravel()))
         next_idx = np.random.choice(len(word_to_index_dict), p = output_probs.ravel())
