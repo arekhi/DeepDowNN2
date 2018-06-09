@@ -20,7 +20,7 @@ glove_length = len(word_glove_pairs_dict['a'])
 # Read in word-definition pairs
 with open('../data/word_defn_pairs.txt', 'rb') as fp:
     word_defn_pairs_dict = pickle.load(fp)
-#print(word_defn_pairs_dict['father'])
+#print(word_defn_pairs_dict['skyscraper'])
 #print(len(word_defn_pairs_dict))
 
 # Make a new list: for the word-clue pairs whose words appear in the word-glove
@@ -29,6 +29,9 @@ with open('../data/word_defn_pairs.txt', 'rb') as fp:
 #   emb_clue_word_1, ...].
 words, indices, clues, definitions, num_pairs_added, max_clue_length, max_defn_length = helper_functions.choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict, word_defn_pairs_dict)
 #print(len(set(words)))
+
+for i in range(34000,34050):
+    print(words[i], definitions[i])
 
 print('')
 print(word_defn_pairs_dict[sys.argv[1]])

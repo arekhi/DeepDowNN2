@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import pickle 
 import numpy as np
 import helper_functions
@@ -10,10 +12,10 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**15
+NUM_TRAIN = 2**11 + 2**9
 MAX_DEFN_LEN = 20
-FRAC_VAL = 0.01
-NUM_EPOCH = 3
+FRAC_VAL = 0.2
+NUM_EPOCH = 100
 a_LSTM = 128
 
 # Read in word-clue pairs
@@ -21,7 +23,7 @@ with open('../data/word_clue_pairs.txt', 'rb') as fp:
     word_clue_pairs_list = pickle.load(fp)
 
 # Read in word-glove pairs
-with open('../data/word_glove_pairs.txt', 'rb') as fp:
+with open('../data/word_glove_pairs_word_all.txt', 'rb') as fp:
     word_glove_pairs_dict = pickle.load(fp)
     word_to_index_dict = pickle.load(fp)
     index_to_word_dict = pickle.load(fp)
@@ -37,7 +39,7 @@ with open('../data/word_defn_pairs.txt', 'rb') as fp:
 #   emb_clue_word_1, ...].
 words, indices, clues, definitions, num_pairs_added, max_clue_length, max_defn_length = helper_functions.choose_word_clue_pairs_with_dict(NUM_TRAIN, word_clue_pairs_list, word_glove_pairs_dict, word_to_index_dict, word_defn_pairs_dict)
 
-print(num_pairs_added)
+print('\nNum pairs added: ' + str(num_pairs_added) + '\n')
 #for i in range(20):
 #    print(words[i], definitions[i])
 
@@ -69,12 +71,13 @@ for word in word_to_index_dict.keys():
 # Define the training model
 masking_layer = keras.layers.Masking(mask_value = word_to_index_dict['<PAD>'], input_shape = (None,))
 embedding_layer = keras.layers.Embedding(len(word_glove_pairs_dict), glove_length, weights = [embedding_matrix], trainable = False, name = 'embedding')
-encoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = False, name = 'encoder_LSTM')
-encoder_LSTM_bwd = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = False, name = 'encoder_LSTM_bwd', go_backwards = True)
+encoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = False, name = 'encoder_LSTM', recurrent_dropout = 0.2)
+encoder_LSTM_bwd = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = False, name = 'encoder_LSTM_bwd', go_backwards = True, recurrent_dropout = 0.2)
 dense_between_a = keras.layers.Dense(a_LSTM, activation = 'tanh')
 dense_between_c = keras.layers.Dense(a_LSTM, activation = 'tanh')
-decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM')
-dropout_layer = keras.layers.Dropout(0.5)
+decoder_LSTM = keras.layers.LSTM(a_LSTM, return_state = True, return_sequences = True, name = 'decoder_LSTM', recurrent_dropout = 0.2)
+dense_layer_0 = keras.layers.TimeDistributed(keras.layers.Dense(64))
+dropout_layer = keras.layers.Dropout(0.4)
 dense_layer = keras.layers.TimeDistributed(keras.layers.Dense(len(word_glove_pairs_dict)))
 softmax_activation = keras.layers.Activation('softmax')
 
@@ -95,6 +98,7 @@ c_passed = dense_between_c(c_concat)
 masked_clue_indices = masking_layer(clue_indices)
 x_clue = embedding_layer(masked_clue_indices)
 output, _, _ = decoder_LSTM(x_clue, initial_state = [a_passed, c_passed])
+output = dense_layer_0(output)
 output = dropout_layer(output)
 output = dense_layer(output)
 output = softmax_activation(output)
@@ -112,7 +116,7 @@ print(model.summary())
 
 # Fit the training model (train)
 hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPOCH, verbose = 1)
-with open('model_stats.txt', 'wb') as fp: 
+with open('stats_model_no_attn.txt', 'wb') as fp: 
     pickle.dump(hist.history, fp)
 
-model.save('trained_model_with_defn.h5')
+model.save('trained_model_no_attn.h5')

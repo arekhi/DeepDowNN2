@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import pickle 
 import numpy as np
 import helper_functions
@@ -12,7 +12,7 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**14 + 4096
+NUM_TRAIN = 2**8 + 2**6
 MAX_DEFN_LEN = 20
 FRAC_VAL = 0.2
 NUM_EPOCH = 100
@@ -138,14 +138,14 @@ model = keras.models.Model(inputs = [a0, c0, defn_indices, clue_indices], output
 model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['categorical_accuracy']) 
 
 # Summarize the training model
-#print(model.summary())
-
+print(model.summary())
+assert(1==0)
 # Visualize training model
 #keras.utils.plot_model(model, to_file='model.png', show_shapes = True)
 
 # Fit the training model (train)
 hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPOCH, verbose = 1)
-with open('stats_model_with_attn.txt', 'wb') as fp: 
-    pickle.dump(hist.history, fp)
+#with open('test_stats_model_with_attn.txt', 'wb') as fp: 
+#    pickle.dump(hist.history, fp)
 
-model.save('trained_model_with_attn.h5')
+#model.save('test_trained_model_with_attn.h5')

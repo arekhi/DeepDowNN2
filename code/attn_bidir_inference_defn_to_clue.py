@@ -1,3 +1,5 @@
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pickle 
 import numpy as np
 import helper_functions
@@ -8,7 +10,7 @@ with warnings.catch_warnings():
     import tensorflow as tf
     import keras
 
-NUM_TRAIN = 50000 #2**14
+NUM_TRAIN = 2**15 + 2**13
 MAX_DEFN_LEN = 20
 WORD_IDX = int(sys.argv[1])
 a_LSTM = 128
@@ -48,7 +50,8 @@ for word in word_to_index_dict.keys():
     embedding_matrix[word_to_index_dict[word]] = np.array(word_glove_pairs_dict[word])
 
 # Load the model
-trained_model = keras.models.load_model('trained_model_with_defn.h5', custom_objects = {'keras': keras, 't': 0})
+trained_model = keras.models.load_model('largest_trained_model_with_attn.h5', custom_objects = {'keras': keras, 't': 0})
+#trained_model = keras.models.load_model('trained_model_with_attn.h5', custom_objects = {'keras': keras, 't': 0})
 #print(trained_model.summary())
 
 encoder_layer_weights = trained_model.layers[7].get_weights()

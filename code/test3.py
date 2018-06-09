@@ -1,5 +1,5 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 import pickle 
 import numpy as np
 import helper_functions
@@ -12,10 +12,10 @@ with warnings.catch_warnings():
 np.random.seed(0)
 tf.set_random_seed(0)
 
-NUM_TRAIN = 2**14 + 4096
+NUM_TRAIN = 2**11 + 2**9
 MAX_DEFN_LEN = 20
 FRAC_VAL = 0.2
-NUM_EPOCH = 100
+NUM_EPOCH = 20
 a_LSTM = 128
 
 # Read in word-clue pairs
@@ -135,7 +135,8 @@ for t in range(max_clue_length + 2):
 model = keras.models.Model(inputs = [a0, c0, defn_indices, clue_indices], outputs = outputs)
 
 # Compile the training model
-model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['categorical_accuracy']) 
+custom_adam = keras.optimizers.Adam(lr = 0.02)
+model.compile(optimizer = custom_adam, loss = 'categorical_crossentropy', metrics = ['categorical_accuracy']) 
 
 # Summarize the training model
 #print(model.summary())
@@ -145,7 +146,7 @@ model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = [
 
 # Fit the training model (train)
 hist = model.fit(x_train, y_train, validation_split = FRAC_VAL, epochs = NUM_EPOCH, verbose = 1)
-with open('stats_model_with_attn.txt', 'wb') as fp: 
+with open('stats_model_with_attn_2048_tune3.txt', 'wb') as fp: 
     pickle.dump(hist.history, fp)
 
-model.save('trained_model_with_attn.h5')
+#model.save('trained_model_with_attn_2048_tune.h5')
